@@ -1,0 +1,173 @@
+import javax.swing.*;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseEvent;
+import java.awt.Graphics;
+import java.awt.*;
+int caseX=100;//nombre de case en abscisse
+int caseY=50;//nombre de case en ordonnée
+int rectX=10;//largeur d'un rectangle en pixel
+int rectY=10;//hauteur d'un rectangle en pixel
+int caseV=2000;//nombre de case vivantes au départ
+String textCased="STOP";// chaine de charactère correspondant au bouton activé, valeur de départ:"STOP"
+int X =0;//Itération
+int p0=0;//valeur d'état pour le top départ du calcule de la période (p1),si p0=1 alors p1=p1+1
+int p1=1;// valeur de la période
+int periode=0;//objet prenant la valeur de P1
+String Iteration [];//tableau contenant la chaine de charactère  du fichier .cfg correspondant à l'itération
+int[][] tab=new int [caseX+2][caseY+2];//tableau stockant des valeurs de vie et de mort du jeu, le tableau presente dans toute sa périphérie une rangé de case supplémentaire de valeur = 0 cf l'objet etat dans la class Jeudevie_grille
+int[][] tabEtat=new int [caseX+2][caseY+2];//tableau ayant les mêmes positions que tab, stoquant les valeurs d'environnement (etat) de chaque position équivalente du tableau tab cf l'objet etat dans la class Jeudevie_grille
+int[][] tab2=new int[3][3];//tableau de valeurs atribuées par l'utilisation des boutons de la bibliothèque swing
+int[][] tabPrec=new int [caseX+2][caseY+2];//tableau de génération précédente
+int[][] tabDepart=new int [caseX+2][caseY+2];//tableau de génération de départ
+int[][] tabIteration=new int[caseX+2][caseY+2];//tableau créé à chaque comparaison d'une Itération 
+JButton boutonStop=new JButton("STOP");//tab2 [0][0]=1
+JButton boutonCont=new JButton("CONT");//tab2 [0][0]=0
+JButton boutonNext=new JButton("NEXT");//tab2 [0][0]=2
+JButton boutonPrec=new JButton("PREC");//tab2 [0][0]=3
+JButton boutonExport=new JButton("EXPORT");
+JButton boutonImport=new JButton("IMPORT");
+JButton boutonVie=new JButton("VIE");//tab2 [0][2]=1
+JPanel monPanel=new JPanel();
+JFrame monCadre=new JFrame();
+Jeudevie monJeudevie=new Jeudevie();
+Casedepart monCasedepart=new Casedepart();
+Iteration monIteration=new Iteration();
+JLabel monLabel=new JLabel("test");
+
+void setup() {
+  monCadre.setLocation(350, 100);   
+  monCasedepart.setPreferredSize(new java.awt.Dimension(600, 60));
+  monIteration.setPreferredSize(new java.awt.Dimension(350, 50));
+  monJeudevie.setPreferredSize(new java.awt.Dimension(1022, 722));
+  monPanel.add(boutonStop);
+  monPanel.add(boutonCont);
+  monPanel.add(boutonNext);
+  monPanel.add(boutonPrec);
+  monPanel.add(boutonExport);
+  monPanel.add(boutonImport);
+  monPanel.add(boutonVie);   
+  monLabel.setLocation(0, 0);
+  size(1, 1);//taille de la fenêtre processing
+  frameRate(3);   
+  tab2[0][0]=1;
+  for (int c=0; c<caseV; c++) {// attribution de la valeur 1 dans un nombre de position de tab égal à la valeur de caseV    
+    int i=(round(random(1, caseX)));
+    int j=(round(random(1, caseY)));   
+    while (tab[i][j]==1) {
+      i=(round(random(1, caseX)));
+      j=(round(random(1, caseY)));
+    }     
+    tab[i][j]=1;
+  }
+  for (int i=1; i<caseX+1; i++) {
+    for (int j=1; j<caseY+1; j++) {
+      tabDepart[i][j]=tab[i][j];//au démarage du jeux, stockage des valeurs initiales de tab dans tabDepart
+      PrintWriter fic;
+      fic=createWriter("CaseDepart.cfg");//écriture des valeur de tabdepart dans un fichier nommé "CaseDepart.cfg"
+      for (int b=1; b<caseY+1; b++) {
+        for (int a=1; a<caseX+1; a++) {
+          fic.print(tabDepart[a][b]);
+        }
+        fic.println();
+      }
+      fic.flush();
+      fic.close();
+    }
+  }
+}  
+void draw() {    
+  monCadre.setSize(1023, 723); //taille du cadre de swing
+  monCadre.setVisible(true);
+  monCadre.setContentPane(monPanel);
+  monPanel.add(monCasedepart);
+  monPanel.add(monIteration);
+  monPanel.add(monJeudevie);
+
+  monCadre.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
+  boutonStop.addActionListener(new ActionListener() {   
+    public void actionPerformed(ActionEvent e) { 
+      textCased="STOP";
+      tab2[0][0]=1;
+    }
+  }
+  );
+  boutonCont.addActionListener(new ActionListener() {
+    public void actionPerformed(ActionEvent e) {
+      textCased="GENERATION CONTINUE";
+      tab2[0][0]=0;
+    }
+  }
+  ); 
+  boutonPrec.addActionListener(new ActionListener() { 
+    public void actionPerformed(ActionEvent e) {
+      textCased="GENERATION-1";
+      tab2[0][0]=3;
+    }
+  }
+  );
+  boutonNext.addActionListener(new ActionListener() { 
+    public void actionPerformed(ActionEvent e) {
+      textCased="GENERATION+1";
+      tab2[0][0]=2;
+    }
+  }
+  );
+  boutonExport.addActionListener(new ActionListener() {
+    public void actionPerformed(ActionEvent e) {
+      PrintWriter fic;
+      fic=createWriter("jeudevie_"+X+".cfg");//exportation de la  configurations stocké dans le tableau tab de  l'itération N°(X) dans un fichier jeudevie_X.cfg
+      for (int j=1; j<caseY+1; j++) {
+        for (int i=1; i<caseX+1; i++) {
+          fic.print(tab[i][j]);
+        }
+        fic.println();
+      }
+      fic.flush();
+      fic.close();
+    }
+  }
+  );
+  boutonImport.addActionListener(new ActionListener() {
+    public void actionPerformed(ActionEvent e) {
+      String lines [];
+      lines = loadStrings ("CaseDepart.cfg");//importation d'un fichier(.cfg) de la configuration de départ 
+      for (int j=0; j<caseY; j++) {
+        for (int i=0; i<caseX; i++) {
+          tab[i+1][j+1]= Integer.parseInt(""+lines[j].charAt(i));
+        }
+      }
+    }
+  }
+  ); 
+  boutonVie.addActionListener(new ActionListener() { //bouton vie
+    public void actionPerformed(ActionEvent e) { 
+      textCased="VIE";
+      tab2 [0][2]=1;
+    }
+  }
+  );
+  monJeudevie.addMouseListener(new MouseListener() {   
+    public void mouseClicked(MouseEvent e) {
+    }
+    public void mouseEntered(MouseEvent e) {
+    }
+    public void mouseReleased(MouseEvent e) {
+    }
+    public void mouseExited(MouseEvent e) {
+    } 
+    public void mousePressed(MouseEvent e) { //donne la vie
+      int mX=e.getX();//position horizontale de la sourie  
+      int mY=e.getY();//position verticale de la sourie
+      int i=mX/rectX;//conversion(i) de la position mX de la sourie en nombre longeurr(rectX) d'un rectangle
+      int j=mY/rectY;//conversion (j) de la position mY de la sourie en nombre largeur(rectY) d'un rectangle
+      if (tab2[0][2]==1) {//valeur du bouton vie une fois activé
+        if (i>0&&i<(caseX+1)&&j>0&&j<(caseY+1)) {
+          tab [i][j]=1;
+        }
+      }
+    }
+  }
+  );
+}
