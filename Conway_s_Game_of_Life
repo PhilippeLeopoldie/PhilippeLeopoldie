@@ -1,0 +1,326 @@
+
+/*******************display with processing***********************/
+/********************file_1:jeudevie_LEOPOLDIE.pde***********************/
+import javax.swing.*;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseEvent;
+import java.awt.Graphics;
+import java.awt.*;
+int caseX=100;// number of squares on the abscissa
+int caseY=50;//number of squares on the ordinate
+int rectX=10;//width of a rectangle in pixels
+int rectY=10;//length of a rectangle in pixels
+int caseV=2000;//number of live squares at the beginning
+String textCased="STOP";// string corresponding to the activated button, starting value: "STOP"
+int X =0;//Iteration
+int p0=0;//status value for the start signal of the calculation of the period (p1),if p0=1 then p1=p1+1
+int p1=1;// objet taking P1 value
+int periode=0;//period value
+String Iteration [];//array containing the character string of the .cfg file corresponding to the iteration
+int[][] tab=new int [caseX+2][caseY+2];//array storing values ​​of life and death of the game
+int[][] tabEtat=new int [caseX+2][caseY+2];//array having the same positions as tab, storing the environment values ​​("etat") of each equivalent position of the array tab cf "etat" in the class Jeudevie_grille
+int[][] tab2=new int[3][3];//array of values ​​assigned by using swing library buttons
+int[][] tabPrec=new int [caseX+2][caseY+2];//previous generation array
+int[][] tabDepart=new int [caseX+2][caseY+2];//starting generation array
+int[][] tabIteration=new int[caseX+2][caseY+2];//array created at each comparison of an Iteration
+JButton boutonStop=new JButton("STOP");//tab2 [0][0]=1
+JButton boutonCont=new JButton("RUN");//tab2 [0][0]=0 
+JButton boutonNext=new JButton("NEXT");//tab2 [0][0]=2
+JButton boutonPrec=new JButton("PREV");//tab2 [0][0]=3
+JButton boutonExport=new JButton("EXPORT");
+JButton boutonImport=new JButton("IMPORT");
+JButton boutonVie=new JButton("LIFE");//tab2 [0][2]=1
+JPanel monPanel=new JPanel();
+JFrame monCadre=new JFrame();
+Jeudevie_grille monJeudevie=new Jeudevie_grille();
+Casedepart monCasedepart=new Casedepart();
+Iteration monIteration=new Iteration();
+JLabel monLabel=new JLabel("test");
+
+void setup() {
+  monCadre.setLocation(350, 100);   
+  monCasedepart.setPreferredSize(new java.awt.Dimension(600, 60));
+  monIteration.setPreferredSize(new java.awt.Dimension(350, 50));
+  monJeudevie.setPreferredSize(new java.awt.Dimension(1022, 722));
+  monPanel.add(boutonStop);
+  monPanel.add(boutonCont);
+  monPanel.add(boutonNext);
+  monPanel.add(boutonPrec);
+  monPanel.add(boutonExport);
+  monPanel.add(boutonImport);
+  monPanel.add(boutonVie);   
+  monLabel.setLocation(0, 0);
+  size(1, 1);//window size in processing
+  frameRate(3);   
+  tab2[0][0]=1;
+  for (int c=0; c<caseV; c++) {// random assignment of the value 1 for the number of "caseV" elements
+    int i=(round(random(1, caseX)));
+    int j=(round(random(1, caseY)));   
+    while (tab[i][j]==1) {
+      i=(round(random(1, caseX)));
+      j=(round(random(1, caseY)));
+    }     
+    tab[i][j]=1;
+  }
+  for (int i=1; i<caseX+1; i++) {
+    for (int j=1; j<caseY+1; j++) {
+      tabDepart[i][j]=tab[i][j];//at the start of the game, storage of the initial values ​​of "tab" in "tabDepart"
+      PrintWriter fic;
+      fic=createWriter("CaseDepart.cfg");//writing of the "tabdepart" values ​​in a file named "CaseDepart.cfg"
+      for (int b=1; b<caseY+1; b++) {
+        for (int a=1; a<caseX+1; a++) {
+          fic.print(tabDepart[a][b]);
+        }
+        fic.println();
+      }
+      fic.flush();
+      fic.close();
+    }
+  }
+}  
+void draw() {    
+  monCadre.setSize(1023, 723); //frame size from swing
+  monCadre.setVisible(true);
+  monCadre.setContentPane(monPanel);
+  monPanel.add(monCasedepart);
+  monPanel.add(monIteration);
+  monPanel.add(monJeudevie);
+
+  monCadre.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
+  boutonStop.addActionListener(new ActionListener() {   
+    public void actionPerformed(ActionEvent e) { 
+      textCased="STOP";
+      tab2[0][0]=1;
+    }
+  }
+  );
+  boutonCont.addActionListener(new ActionListener() {
+    public void actionPerformed(ActionEvent e) {
+      textCased="GENERATION CONTINUE";
+      tab2[0][0]=0;
+    }
+  }
+  ); 
+  boutonPrec.addActionListener(new ActionListener() { 
+    public void actionPerformed(ActionEvent e) {
+      textCased="GENERATION-1";
+      tab2[0][0]=3;
+    }
+  }
+  );
+  boutonNext.addActionListener(new ActionListener() { 
+    public void actionPerformed(ActionEvent e) {
+      textCased="GENERATION+1";
+      tab2[0][0]=2;
+    }
+  }
+  );
+  boutonExport.addActionListener(new ActionListener() {
+    public void actionPerformed(ActionEvent e) {
+      PrintWriter fic;
+      fic=createWriter("jeudevie_"+X+".cfg");//export of the configurations stored in the array "tab" of iteration Number "X" in a file "jeudevie_X.cfg"
+      for (int j=1; j<caseY+1; j++) {
+        for (int i=1; i<caseX+1; i++) {
+          fic.print(tab[i][j]);
+        }
+        fic.println();
+      }
+      fic.flush();
+      fic.close();
+    }
+  }
+  );
+  boutonImport.addActionListener(new ActionListener() {
+    public void actionPerformed(ActionEvent e) {
+      String lines [];
+      lines = loadStrings ("CaseDepart.cfg");//importing a file (.cfg) of the starting configuration
+      for (int j=0; j<caseY; j++) {
+        for (int i=0; i<caseX; i++) {
+          tab[i+1][j+1]= Integer.parseInt(""+lines[j].charAt(i));
+        }
+      }
+    }
+  }
+  ); 
+  boutonVie.addActionListener(new ActionListener() { //life button
+    public void actionPerformed(ActionEvent e) { 
+      textCased="LIFE";
+      tab2 [0][2]=1;
+    }
+  }
+  );
+  monJeudevie.addMouseListener(new MouseListener() {   
+    public void mouseClicked(MouseEvent e) {
+    }
+    public void mouseEntered(MouseEvent e) {
+    }
+    public void mouseReleased(MouseEvent e) {
+    }
+    public void mouseExited(MouseEvent e) {
+    } 
+    public void mousePressed(MouseEvent e) { //give life
+      int mX=e.getX();//horizontal mouse position 
+      int mY=e.getY();//vertical mouse position
+      int i=mX/rectX;//conversion(i) of mouse position mX into the length(rectX) of a rectangle
+      int j=mY/rectY;//conversion(j) of mouse position mY into the width(rectY) of a rectangle
+      if (tab2[0][2]==1) {//life button value when activated
+        if (i>0&&i<(caseX+1)&&j>0&&j<(caseY+1)) {
+          tab [i][j]=1;
+        }
+      }
+    }
+  }
+  );
+}
+
+/*********************file_2:Jeudevie_grid.pde******************/
+
+import java.awt.*;
+class Jeudevie_grid  extends JPanel {// class allowing the display of the game grids according to the criteria of life and death and according to the state values ​​of the array "tab2"
+  void paint(Graphics g) {     
+    for (int i=1; i<caseX+1; i++) {//create a horizontal row of rectangle corresponding to the number of caseX
+      for (int j=1; j<caseY+1; j++) {//create a vertical row of rectangle corresponding to the number of caseY    
+        if (tab[i][j]==1) {       
+          g.setColor(Color.BLUE);
+          g.fillRect(i*rectX, j*rectY, rectX, rectY);//filled rectangle at  i and j positions
+        } else     
+        g.setColor(Color.BLACK);
+        g.drawRect(i*rectX, j*rectY, rectX, rectY);//empty rectangle at  i and j positions
+      }
+    }
+    if (tab2[0][0]==0) {//Initiale value of "tab2" used for the number of cycle counter
+      X=X+1;//iteration+1
+      if (p0==1) {//starting value of the period calculation
+
+        p1=p1+1;//period+1
+      }
+      for (int i=1; i<caseX+1; i++) {
+        for (int j=1; j<caseY+1; j++) {
+          tabPrec[i][j]=tab[i][j];
+        }
+      }
+      for (int i=1; i<caseX+1; i++) {
+        for (int j=1; j<caseY+1; j++) { 
+          int etat=(tab[i-1][j-1])+(tab[i][j-1])+(tab[i+1][j-1])+(tab[i-1][j])+(tab[i+1][j])+(tab[i-1][j+1])+(tab[i][j+1])+(tab[i+1][j+1]);//etat=sum of the values ​​of the 8 neighboring positions of the coordinate i,j
+          tabEtat[i][j]=etat;//storage of the value of "etat" in tabEtat for an equivalent position i,j in the array "tab"
+        }
+      }
+      for (int i=1; i<caseX+1; i++) {
+        for (int j=1; j<caseY+1; j++) { 
+          if ((tab [i][j]==0) && (tabEtat[i][j]==3)) {//if for a dead cell (position i,j of tab equal to 0) and 3 live surrounding cells (position i,j of state equal to 3)
+            tab[i][j]=1;// alors la cellule devient vivante
+          }
+          if (((tab[i][j]==1)) && ((tabEtat[i][j]==2)||(tabEtat[i][j]==3))) {//si une cellule vivante et que  2 ou 3 cellules vivantes autour
+            tab[i][j]=1;//then the cell becomes alive
+          } else
+            tab[i][j]=0;// otherwise the cell dies
+        }
+      };
+    }
+    if (tab2[0][0]==2) {//"NEXT" bouton value
+      X=X+1;//iteration+1
+      if (p0==1) {
+        p1=p1+1;//periode+1
+      }
+      for (int i=1; i<caseX+1; i++) {
+        for (int j=1; j<caseY+1; j++) {
+          tabPrec[i][j]=tab[i][j];
+          tab2[0][0]=1;//Run stop value
+        }
+      }
+      for (int i=1; i<caseX+1; i++) {
+        for (int j=1; j<caseY+1; j++) {
+          int etat=(tab[i-1][j-1])+(tab[i][j-1])+(tab[i+1][j-1])+(tab[i-1][j])+(tab[i+1][j])+(tab[i-1][j+1])+(tab[i][j+1])+(tab[i+1][j+1]);
+          tabEtat[i][j]=etat;
+        }
+      }
+      for (int i=1; i<caseX+1; i++) {
+        for (int j=1; j<caseY+1; j++) {
+          if ((tab[i][j]==0) && (tabEtat[i][j]==3)) {
+            tab[i][j]=1;
+          }
+          if (((tab[i][j]==1)) && ((tabEtat[i][j]==2)||(tabEtat[i][j]==3))) {
+            tab[i][j]=1;
+          } else
+            tab[i][j]=0;
+        }
+      }
+    }
+    if (tab2[0][0]==3) {//"PREV" bouton value
+      X=X-1;//Iteration -1
+      if (p0==1) {
+        p1=p1-1;//period -1
+      }
+      for (int i=1; i<caseX+1; i++) {
+        for (int j=1; j<caseY+1; j++) {
+          tab[i][j]=tabPrec[i][j];
+          tab2[0][0]=1;//Run stop value
+        }
+      }
+    }
+  }
+}
+/********************File_3:Iteration.pde*********************/
+class Iteration extends JPanel {// Iteration and Period
+  void paint(java.awt.Graphics g) {     
+    periode=p1;   
+    PrintWriter Ite;//writing of an "Iteration_X.cfg" file at each iteration, let X be the iteration number
+    Ite=createWriter("Iteration_"+X+".cfg");
+    for (int b=1; b<caseY+1; b++) {
+      for (int a=1; a<caseX+1; a++) {
+        Ite.print(tab[a][b]);
+      }
+      Ite.println();
+    }
+    Ite.flush();
+    Ite.close();
+    for (int I=1; I<X-1; I++) { 
+      try
+      { 
+        Iteration = loadStrings ("Iteration_"+I+".cfg");
+      }
+      catch(Exception e) {
+        println("fichier: Iteration_"+I+".cfg");
+      }
+      Iteration = loadStrings ("Iteration_"+I+".cfg");
+      p0=1;
+      for (int j=0; j<caseY; j++) {
+        for (int i=0; i<caseX; i++) {
+          tabIteration[i+1][j+1]= Integer.parseInt(""+Iteration[j].charAt(i));//integration of the values ​​of the "Iteration_"I".cfg" file into a tabIteration array with the same number of boxes as the tab array
+          if (tab[i][j]!=tabIteration[i][j]) { //comparison of the contents of the two arrays
+            p0=0;//statue of P0 if the current configuration is not identical to the configuration encountered X iterations ago
+          }
+        }
+      }
+    }  
+    g.setFont(new java.awt.Font("Arial", java.awt.Font.ITALIC, 30)); 
+    g.drawString("Iterations: "+X, 150, 25);//X Iterations display
+    if (p0==0) { 
+      g.drawString("Période: 0", 150, 50);
+    }
+    if (p0==1) { 
+      g.drawString("Période: "+periode, 150, 50);
+    }
+  }
+}
+
+/***************File_4:InitialConfig.pde*******************/
+
+class InitialConfig extends JPanel {// if back to the initial configuration
+  void paint(java.awt.Graphics g) { 
+    String CaseD="Back to the initial configuration";
+    for (int i=1; i<caseX+1; i++) { 
+      for (int j=1; j<caseY+1; j++) { 
+        if (tab[i][j]!=tabDepart[i][j]) { // comparaison between the valeur of "tab" and "tabDepart" positions
+          CaseD="";
+        }
+      }
+    }
+    g.setFont(new java.awt.Font("Arial", java.awt.Font.ITALIC, 30)); 
+    g.drawString(textCased, 0, 25);//Information display in relation with the activated bouton
+    g.setFont(new java.awt.Font("Arial", java.awt.Font.ITALIC, 30));
+    g.drawString(CaseD, 280, 50);//display of the string corresponding to the initial configuration
+  }
+}
