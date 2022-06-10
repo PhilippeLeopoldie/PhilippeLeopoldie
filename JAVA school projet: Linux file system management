@@ -1,0 +1,1223 @@
+													/******Fusion.java********/						
+/*The "Fusion" class calls on the graphic content of the "panneau" (mean Panel) class (from 'Panneau.java' file) and the methods of the Project class (from 'Projet.java' file).
+Therefore Fusion is the link between the positioning of the mouse clicks,
+the graphic images of the "Panneau" class via the object "pan"and the execution of linux commands by calling the various corresponding methods of the
+class "Projet" via the object "Pr"*/
+
+import java.io.*;
+import java.util.*;
+import java.awt.Graphics;
+import java.awt.Color;
+import javax.swing.JPanel;
+import javax.swing.JFrame;
+import java.awt.*;
+import javax.swing.*;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseEvent;
+import java.io.IOException; 
+								
+		
+
+class Fusion extends JFrame{
+	
+	
+	Panneau pan=new Panneau();//panel object
+	
+	
+	Projet pr =new Projet (null,null,null,null,"racine",false,"",0,"");//"Project" object equivalent to a folder
+	JPanel monPanel=new JPanel();
+	
+	
+	JButton boutton2=new JButton("validation");
+	
+	
+	Box b1= Box.createVerticalBox();
+	JTextField texteOperateur =new JTextField(10);
+	JTextField zoneFichier =new JTextField(5);
+
+	JFrame monCadre=new JFrame("Arborescence");
+	int posX=pan.posX+120;
+	int posY=pan.posY+20;
+	int controle=0;
+	
+	
+				/****************************/
+				
+/*the  "nouveauDossier()" method (mean new folders) displays a JFrame after creating a folder in Fusion()
+and allows you to enter the name of the created folder and then saving it or not*/
+	public  void nouveauDossier(){
+		JButton boutton4=new JButton("ENREGISTRER");
+		System.out.println("info nouveauDossier");
+		JPanel monPanel=new JPanel();
+		JFrame monCadreD=new JFrame("CREATION DOSSIER");
+		JTextField dossierField =new JTextField(50);
+			
+			
+			
+		monCadreD.setSize(900, 900);
+		monPanel.setBackground(Color.blue);
+			
+		monCadreD.setLocationRelativeTo(null);
+		monPanel.add(dossierField);
+		monPanel.add(boutton4);
+			
+		monCadreD.setContentPane(monPanel);
+		monCadreD.setVisible(true);
+		System.out.println("info nouveauDossier2");
+			
+		boutton4.addActionListener(new ActionListener() {   
+			public void actionPerformed(ActionEvent e) { 
+				texteOperateur.setText(">mkdir "+dossierField.getText());
+				communicationProjet();
+				System.out.println("info nouveauDossier3");
+				monCadreD.dispose();
+			}
+		});
+	}
+				/****************************/
+				
+/*the  "nouveauFichier()" method (mean newFile)   displays a JFrame after creating a file in Fusion()
+and allows you to enter the name of the created file and then saving it or not*/	
+	
+	public  void nouveauFichier(){//sous méthode de fusion()
+		JButton boutton4=new JButton("ENREGISTRER");
+		JTextField fichierField =new JTextField(50);
+		JPanel monPanel1=new JPanel();
+		JFrame monCadre1=new JFrame("CREATION FICHIER");
+		monCadre1.setSize(900, 900);
+		monPanel1.setBackground(Color.blue);
+		monCadre1.setLocationRelativeTo(null);
+		monPanel1.add(fichierField);
+		monPanel1.add(boutton4);
+		monCadre1.setContentPane(monPanel1);
+		monCadre1.setVisible(true);	
+		
+		boutton4.addActionListener(new ActionListener() {   
+			public void actionPerformed(ActionEvent e) { 
+				texteOperateur.setText(">mkfile "+fichierField.getText());
+				communicationProjet();
+				monCadre1.dispose();
+				}
+		});
+	}
+
+/*the communicationProjet() method allows the exchange of information between the class Fusion and the class project in particular by the transport of
+linux instructions for their interpretation in the commande() method of the Project class*/
+	public void communicationProjet(){
+		System.out.println("communicationProjet textoperateur: "+texteOperateur.getText());
+		try{		
+		String [] temp=texteOperateur.getText().split(">");//reading of the instructions after the chevron">"
+		if (temp.length==2){
+			if(temp[1].equals("quit")){
+				monCadre.dispose();
+				}
+			else{
+				texteOperateur.setText(temp[1]);
+				pan.textePanneau.setText(texteOperateur.getText());
+				monPanel.repaint();
+					
+//the pr object of the Project class includes in its ligneCmd attribute the linux command contained in the texteOperateur variable				
+				pr.ligneCmd=texteOperateur.getText();
+					
+//controle: allows a stop and/or a continuation of code reading during the command() method of the project class to simulate a wait for an instruction					
+				pr.controle=1;
+				pr=pr.commande(pr);
+				System.out.println("comProjet ligne119_pr.contenu: "+pr.contenu+"fin_ligne119");
+				pr.controle=0;
+				if(pr.ligneCmd.equals("ls")){
+					texteOperateur.setText(pr.nom+">");	
+					pan.textePanneau.setText(pr.nom+":"+pr.contenu);
+				}
+				else{
+					if(pr.ligneCmd.equals("less")){
+							
+						pan.textePanneau.setText(pr.nom+":"+pr.contenu);
+						pr=pr.pere;
+						texteOperateur.setText(pr.nom+">");
+					}
+					else{
+						texteOperateur.setText(pr.ligneCmd);
+						pan.textePanneau.setText("contenu de "+pr.nom+": "+pr.informationCascade(pr));
+					}
+				}	
+			}
+		}
+		}
+		catch(Exception e) {
+		System.out.println("fichier inexistant dans Fusion l.172");
+        }	
+	}
+						
+						
+						/***********************************/
+						
+/* Fusion() makes the link between the positioning of mouse clicks on the JPanel monPanel
+and the execution of linux commands by calling the various corresponding methods of the
+class Project via pr object*/
+	public Fusion(){
+		
+		monCadre.setSize(900, 900);
+		monCadre.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		monCadre.setLocationRelativeTo(null);
+		monPanel.setLayout(new BorderLayout());
+		monPanel.setBackground(Color.white);
+		pan.textePanneau.setText(pr.nom+">"+"nbFils0");
+		texteOperateur.setText(pr.nom+">");
+		JPanel monPanel2=new JPanel();
+		//Box b1= Box.createVerticalBox();
+		b1.add(boutton2);
+		b1.add(zoneFichier);
+		monPanel2.add(b1);
+		monPanel.add(texteOperateur,BorderLayout.NORTH);
+		monPanel.add(pan,BorderLayout.CENTER);
+		monPanel.add(monPanel2,BorderLayout.WEST);
+		monCadre.setVisible(true);
+		monCadre.setContentPane(monPanel);
+    
+		boutton2.addActionListener(new ActionListener() {   // validation boutton
+			public void actionPerformed(ActionEvent e) { 
+			
+                communicationProjet();
+				
+			}
+		});
+		
+		monPanel.addMouseListener(new MouseListener() {   
+			public void mouseClicked(MouseEvent e) {
+		
+			}
+	
+			public void mouseEntered(MouseEvent e) {
+			}
+			public void mouseReleased(MouseEvent e) {
+			}
+			public void mouseExited(MouseEvent e) {
+			} 
+			public void mousePressed(MouseEvent e) { 
+				int sX=e.getX();//horizontal mouse position 
+				int sY=e.getY();//vertical mouse position 
+	
+	/************************************************/
+			//import zone
+				try{
+					if(sX>posX && sX<(posX+pan.dimXImage)&&sY>25 && sY<(25+pan.dimYImage)){ //import zone
+						if(!zoneFichier.getText().equals("")){
+							System.out.println("import ok");
+							pr=pr.lectureFichier(zoneFichier.getText());
+							texteOperateur.setText(">ls");
+							communicationProjet();
+						}
+					}
+				}
+				catch(Exception f) {
+					monCadre.dispose();
+					Fusion g=new Fusion();
+		
+					}
+		
+	/*************************************************/
+	//children's (french:fils) zone 1, 2 and 3. opening of the child present under the position of the mouse
+	
+				if(sX>posX && sX<(posX+pan.dimXImage)&&sY>posY && sY<(posY+pan.dimYImage)){ //child1 (french:fils1)
+					if((pr.fils1!=null)&&(!pr.fils1.type)){// if fils1 exists and fils1 is a folder
+						texteOperateur.setText(">cd "+pr.fils1.nom);
+			
+						communicationProjet();
+			
+					}
+				else{
+					if((pr.fils1!=null)&&(pr.fils1.type)){// if fils1 exists and fils1 is a file
+						texteOperateur.setText(">less "+pr.fils1.nom);
+				
+						communicationProjet();
+				
+					}
+				}
+				}
+				if(sX>(posX+(2*pan.dimXImage)) && sX<(posX+(3*pan.dimXImage))&&sY>posY && sY<(posY+pan.dimYImage)){// child2 zone (fench:fils2)
+					if( (pr.fils2!=null)&&(!pr.fils2.type)){
+						texteOperateur.setText(">cd "+pr.fils2.nom);
+			
+						communicationProjet();
+					}
+				else{
+					if( (pr.fils2!=null)&&(pr.fils2.type)){
+						texteOperateur.setText(">less "+pr.fils2.nom);
+			
+						communicationProjet();
+					}  
+				}
+				}
+				if(sX>(posX+(4*pan.dimXImage)) && sX<(posX+(5*pan.dimXImage))&&sY>posY && sY<(posY+pan.dimYImage)){//child3 zone (french:fils3)
+					if( (pr.fils3!=null)&&(!pr.fils3.type)){
+					texteOperateur.setText(">cd "+pr.fils3.nom);
+			
+					communicationProjet();
+					}
+				else{
+					if( (pr.fils3!=null)&&(pr.fils3.type)){
+					texteOperateur.setText(">less "+pr.fils3.nom);
+			
+					communicationProjet();
+					}  
+				}
+				}
+	  
+	  /*******************************************************/
+	  //commande rm(remove)
+				if(sX>posX+pan.dimXImage && sX<(posX+pan.dimXImage+(pan.dimXImage/4))&&sY>posY+pan.dimYImage && sY<(posY+pan.dimYImage+(pan.dimYImage/4))){ //zone for removing child1
+					if(pr.fils1!=null){// if fils1 exist
+						texteOperateur.setText(">rm "+pr.fils1.nom);
+			
+						communicationProjet();
+			
+					}
+		  
+				}
+				if(sX>(posX+(3*pan.dimXImage)) && sX<(posX+(4*pan.dimXImage))&&sY>posY+pan.dimYImage && sY<(posY+pan.dimYImage+(pan.dimYImage/4))){// zone for removing child2
+					if( pr.fils2!=null){
+						texteOperateur.setText(">rm "+pr.fils2.nom);
+			
+						communicationProjet();
+					}
+		  
+				}
+				if(sX>(posX+(5*pan.dimXImage)) && sX<(posX+(6*pan.dimXImage))&&sY>posY+pan.dimYImage && sY<(posY+pan.dimYImage+(pan.dimYImage/4))){//zone for removing child3
+					if( pr.fils3!=null){
+						texteOperateur.setText(">rm "+pr.fils3.nom);
+			
+						communicationProjet();
+					}
+		  
+				}
+	  
+	  /*******************************************************/
+	  //command: cd..
+				if(sX>(pan.posX+(pan.getWidth()/2)+(3*pan.dimXImage)) && sX<(pan.posX+(pan.getWidth()/2)+(4*pan.dimXImage))&&sY>50 && sY<(50+pan.dimYImage)){//zone "retour"
+					System.out.println("zone de retour");
+					texteOperateur.setText(">cd..");
+					communicationProjet();
+				}
+	  
+	  /*******************************************************/
+	  // command:pwd
+				if(sX>(pan.posX+(pan.getWidth()/2)) && sX<(pan.posX+(pan.getWidth()/2)+pan.dimXImage)&&sY>posY+300 && sY<(posY+300+pan.dimYImage)){//zone "pwd"
+					System.out.println("zone de pwd");
+					texteOperateur.setText(">pwd");
+					communicationProjet();
+				}
+	  
+	  /*******************************************************/
+	  //equivalent as command: mkdir
+				if(sX>(pan.posX+(pan.getWidth()/2)-(2*pan.dimXImage)) && sX<(pan.posX+(pan.getWidth()/2)-pan.dimXImage)&&sY>posY+300 && sY<(posY+300+pan.dimYImage)){//zone "nouveauDossier"
+					System.out.println("zone de nouveauDossier");
+					nouveauDossier();
+	
+		/*******************************************************/
+		//equivalent as command: mkfile
+				}
+				if(sX>(pan.posX+(pan.getWidth()/2)+(2*pan.dimXImage)) && sX<(pan.posX+(pan.getWidth()/2)+(3*pan.dimXImage))&&sY>20+posY+300 && sY<(20+posY+300+pan.dimYImage)){//zone "nouveauFichier"
+					System.out.println("zone de nouveauFichier");
+					nouveauFichier();
+		
+		
+				}
+	  
+    
+			}
+		});
+	
+	}
+	public static void main(String []args){
+		Fusion f=new Fusion();
+	}
+}
+
+
+
+
+/***************************************************************************/
+/***************************************************************************/
+/***************************************************************************/
+/***************************************************************************/
+/***************************************************************************/
+					
+
+/************ Panneau.java: GRAPHIC WINDOW:**************/
+
+
+import java.awt.Graphics;
+import javax.swing.JPanel;
+import javax.swing.*;
+import java.util.*;
+import java.awt.TextField;
+import java.awt.Image;
+import java.io.File;
+import java.io.IOException; 
+import javax.imageio.ImageIO;
+public class Panneau extends JPanel { 
+	JTextField textePanneau =new JTextField(10);
+	JTextPane textPane=new JTextPane();
+	String expression;
+	int localisation;
+	int posX=20;
+	int posY=200;
+	int dimXImage=100;//image width
+	int dimYImage=100;//image length
+	public Image imgFichier;//file image
+	public Image imgDossier;//Folder image
+	public Image imgRetour; //PREV image
+	public Image imgNouveauDossier;//new folder image
+	public Image imgNouveauFichier;// new file image
+	public Image imgSupprimer;// remove image
+	public Image imgImport;//import image
+	public Image imgPwd;//Pwd image
+
+
+	public  void paintComponent(Graphics g){
+		System.out.println("textepanneau: "+textePanneau.getText());
+		try{
+			imgImport = ImageIO.read(new File("import.png"));//image import
+			g.drawImage(imgImport, posX, 10,dimXImage,dimYImage,this);
+		}
+		catch (IOException e){
+			e.printStackTrace(); 
+		}
+  // exemple of textePanneau "racine (mean roots): d_sd1_278 octets_nbFils3//d_sd3_0 octets_nbFils0//f_un_fichier_78 octets_nbFils0//"
+		String [] temp=textePanneau.getText().split("//");
+		String[] temp2=temp[0].split(":");
+		if(temp2.length==2){//if fils1 exist
+			temp[0]=temp2[1];
+		}
+		System.out.println("taille de "+textePanneau.getText()+":"+temp.length);
+		System.out.println();
+
+		for(int i=0;i<temp.length;i++){
+			expression=temp[i];
+	  
+			localisation= expression.indexOf("d_");
+	  
+			char localisationNbFils=expression.charAt(expression.length()-1);
+			System.out.println("temp position:"+i+"_nbFils="+localisationNbFils);
+	 
+			try{
+				imgSupprimer = ImageIO.read(new File("Supprimer.png"));
+		  
+			
+				if (localisationNbFils=='3'){
+	  
+					imgDossier = ImageIO.read(new File("dossierPlein.png"));
+				}
+				else{
+					if (localisationNbFils=='0'){
+						imgDossier = ImageIO.read(new File("dossierVide.png")); 
+					}
+					else{
+						imgDossier = ImageIO.read(new File("dossierSemi.png"));
+					}
+				}
+			}
+			catch (IOException e){
+				e.printStackTrace(); 
+			}
+			if(localisation!=-1){
+		  
+				g.drawLine(20+(dimXImage/2),150,20+(dimXImage/2),100);//vertical line 50 px high
+					if(posX<=420){
+					g.drawLine(20+(dimXImage/2),150,posX+(dimXImage/2),150);//horizontal line of height according to the number of children(fils)
+					}
+			
+				g.drawImage(imgDossier, posX, posY,dimXImage,dimYImage,this);//image "dossier"(mean folder)
+				g.drawLine(posX+(dimXImage/2),posY,posX+(dimXImage/2),posY-50);//vertical line 50 px high centered on the image
+				g.drawImage(imgSupprimer, posX+dimXImage, posY+dimYImage,dimXImage/4,dimYImage/4,this);//image "supprimer" (mean remove)
+				g.drawString(expression,posX,posY+150);//info dossier (mean folder information)
+				posX=posX+200;  
+			}
+			else{
+				localisation= expression.indexOf("f_");
+				if(localisation!=-1){
+					try {
+						imgFichier = ImageIO.read(new File("fichierTexte.png"));
+				
+						g.drawLine(20+(dimXImage/2),150,20+(dimXImage/2),100);
+						if(posX<=420){
+							g.drawLine(20+(dimXImage/2),150,posX+(dimXImage/2),150);
+						}
+						g.drawImage(imgFichier, posX, posY,dimXImage,dimYImage,this);//image "fichier" (mean file image)
+						g.drawLine(posX+(dimXImage/2),posY,posX+(dimXImage/2),posY-50);
+						g.drawImage(imgSupprimer, posX+dimXImage, posY+dimYImage,dimXImage/4,dimYImage/4,this);//image "supprimer" (mean remove image)
+						g.drawString(expression,posX,posY+150);
+						posX=posX+200;
+					}
+					catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			System.out.print("element "+i+":"+temp[i]+";");
+		}
+		posX=20;
+ 
+		try{
+			imgRetour = ImageIO.read(new File("retour.png"));
+			g.drawImage(imgRetour, ((this.getWidth()/2)+(2*dimXImage)), 30,dimXImage,dimYImage,this);
+		}
+		catch(IOException e){
+			e.printStackTrace();
+		}
+		try{
+			imgRetour = ImageIO.read(new File("pwd.png"));
+			g.drawImage(imgRetour, ((this.getWidth()/2)-dimXImage), posY+300,dimXImage,dimYImage,this);
+		}
+		catch(IOException e){
+			e.printStackTrace();
+		}
+		try{
+			imgNouveauDossier = ImageIO.read(new File("nouveauDossier.png"));
+			g.drawImage(imgNouveauDossier, ((this.getWidth()/2)-(3*dimXImage)), posY+300,dimXImage,dimYImage,this);
+		}
+		catch(IOException e){
+			e.printStackTrace();
+		}
+		try{
+			imgNouveauFichier = ImageIO.read(new File("nouveauFichier.png"));
+			g.drawImage(imgNouveauFichier, ((this.getWidth()/2)+dimXImage), posY+300,dimXImage,dimYImage,this);
+		}
+		catch(IOException e){
+			e.printStackTrace();
+		}
+	}               
+}
+
+
+
+
+/***************************************************************************/
+/***************************************************************************/
+/***************************************************************************/
+/***************************************************************************/
+/***************************************************************************/
+
+/*******Projet.java: execution of linux commands *******/
+import java.io.*;
+import java.util.*;
+
+import java.awt.Graphics;
+import javax.swing.JPanel;
+
+
+
+import javax.swing.JFrame;
+
+import java.awt.*;
+import javax.swing.*;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+
+class Projet {
+	
+	public Projet pere;public Projet fils1;public Projet fils2;public Projet fils3;
+	public String nom; public boolean type;public String contenu;public int taille;public String ligneCmd;
+	Projet position;public String tropPlein="Structure pleine!!!";/*Projet projetFichier;*/Projet fichierEncours1;
+	
+	
+/*controle: allows a stop and/or a continuation of reading of the code during the
+command() method of the project class to simulate a wait for an instruction*/					
+	int controle=0;
+	
+	public Projet(Projet a,Projet b,Projet c,Projet d, String n, boolean ty,String co, int ta,String t){	
+	
+		pere=a;
+		fils1=b;
+		fils2=c;
+		fils3=d;
+		nom=n;
+		type=ty;
+		contenu=co;
+		taille=ta;	
+		ligneCmd=t;
+		
+	}
+	
+							/********************************/
+//nouveauFichier() : creation of a new file							
+	public  Projet nouveauFichier(String a){
+		 Projet x =new Projet (null,null,null,null,a,true,"",0,"");
+		return x;
+	}
+							
+							/********************************/
+//nouveauDossier() : creation of a new folder			
+	
+	public   Projet nouveauDossier(String a){
+		Projet x =new Projet (null,null,null,null,a,false,"",0,"");	
+		return x;
+	}
+	
+							/***********METHODE 1***********/	
+							
+/*it allows to add as child of a given node another node
+(or a piece of tree structure) passed as a parameter.*/	
+	
+	public  Projet ajoutFils (Projet n1,Projet n2){ 
+		n2.pere=n1;
+		if(n1.fils1!=null){
+			if(n1.fils2!=null){
+				if(n1.fils3!=null){
+					System.out.println(tropPlein);
+					n2.ligneCmd=tropPlein;
+				}
+				else{
+					n2.pere=n1;
+					if((n2.nom.compareToIgnoreCase(n1.fils2.nom))>0){
+						n1.fils3=n2;
+					}
+					else{
+						if((n2.nom.compareToIgnoreCase(n1.fils1.nom))>0){
+							n1.fils3=n1.fils2;
+							n1.fils2=n2;
+						}
+						else{
+							n1.fils3=n1.fils2;
+							n1.fils2=n1.fils1;
+							n1.fils1=n2;
+						}
+					}
+				}
+			}
+			else{
+				if((n2.nom.compareToIgnoreCase(n1.fils1.nom))>0){
+					n1.fils2=n2;
+				}
+				else{
+					n1.fils2=n1.fils1;
+					n1.fils1=n2;	
+				}
+			}
+		}
+		else{
+		n1.fils1=n2;
+		}
+		tailleDossierEnCascade(n1);
+		System.out.println("nouveau dossier ");
+		return n2;
+	}
+	
+							
+							
+							/************METHODE 2************/
+							
+//supprimerNoeud(): allows you to delete a node from the tree structure
+	public  void supprimerNoeud(Projet x){  
+		if (x==x.pere.fils1){
+			x.pere.fils1=x.pere.fils2;
+			x.pere.fils2=x.pere.fils3;
+			x.pere.fils3=null;	
+		}
+		else{
+			if (x==x.pere.fils2){
+				x.pere.fils2=x.pere.fils3;
+				x.pere.fils3=null;	
+			}
+			else{
+				x.pere.fils3=null;
+			}
+		}
+		tailleDossierEnCascade(x.pere);
+	}
+	
+							/**********************************/
+							
+//nbFils(): allows to know the number of children of the current folder
+	public int nbFils(Projet x){
+		int nb=0;
+		if(x.fils3!=null){
+			nb=3;
+		}
+		else{
+			if(x.fils2!=null){
+				nb=2;	
+			}
+			else{
+				if(x.fils1!=null){
+					nb=1;
+				}
+				else{
+					nb=0;
+				}
+			}
+		}
+		return nb;
+	}
+	
+	
+							/*************METHODE 3*****************/
+/* informationCascade(): returns as a String type variable, all the information (a letter equal to 'd' as folder
+or 'f' as file, plus name and size in bytes)concerning the folders and files included inside the folder represented by a node.*/ 
+	
+	public  String information (Projet x){ //gives the information of the current folder
+		String type="null";
+		String taille=Integer.toString(x.taille);
+		String nom=x.nom;
+		if (x.type)
+			 type="f";
+		else
+			type="d";
+		String info=type+"_"+nom+"_"+taille+" octets"+"_nbFils"+nbFils(x)+"//";
+		return info;
+	}
+	
+						/******************************************/
+	//gives the information of all child elements
+	
+	public  String informationCascade (Projet x){
+		String informationCascade="null";
+		if(x.fils3!=null){
+		 informationCascade=information(x.fils1)+information(x.fils2)+information(x.fils3);
+		return informationCascade;
+		}
+		else{
+			if(x.fils2!=null){
+				 informationCascade=information(x.fils1)+information(x.fils2);
+				return informationCascade;
+			}
+			else{
+				if(x.fils1!=null){
+					 informationCascade=information(x.fils1);
+					return informationCascade;
+				}
+				else
+					return informationCascade;
+			}
+		}	
+	}
+						
+						/******************METGHODE 4****************/
+/*pwd(): returns as String variable all the names of the nodes located on the branch from the root to the current node*/ 
+						
+	public  String pwd(Projet x){ 
+	String cheminAbsolue=x.nom;
+		while(x.pere!=null){
+			cheminAbsolue=x.pere.nom+"/"+cheminAbsolue;
+			x=x.pere;
+		}
+			return cheminAbsolue;
+	}
+	public  String clavier() {//useful for keyboard input from the shell, but no longer necessary via the graphical interface
+		
+        Scanner input=new Scanner(System.in);
+        String c=input.nextLine();
+        return c;
+    }
+	
+						/*******************METHODE 5*************/
+						
+	public  String reference(Projet x){ //useful for keyboard input from the shell, but no longer necessary via the graphical interface
+	
+		String y=clavier();
+	
+		while(!y.equals("quit")){
+		
+			if (y.equals("cd"+"..")){
+				System.out.println("ok");
+				reference(x);
+				return x.pere.nom;
+					
+			}
+			else{
+				if(x.fils1!=null && y.equals("cd "+x.fils1.nom)){
+					System.out.println("trouve!");
+					x=x.fils1;
+					reference(x);
+					return x.fils1.nom;
+				}
+				else{
+					if(x.fils2!=null && y.equals("cd "+x.fils2.nom)){
+						System.out.println("trouve!");
+						x=x.fils2;
+						reference(x);
+						return x.fils2.nom;
+					}
+					else{
+						if(x.fils3!=null && y.equals("cd "+x.fils3.nom)){
+							System.out.println("trouve!");
+							x=x.fils3;
+							reference(x);
+							return x.fils3.nom;
+						}
+						else{
+							System.out.println("Aucun "+y+" trouve!");
+							reference(x);
+							return y;	 	
+						}
+					}
+				}
+			}
+			
+		}
+		System.out.print("fin");
+		return y;
+	}
+	
+	//commande(): allows the processing of linux commands contained in the ligneCmd attribute of a Project object
+	public  Projet commande(Projet x){
+	
+		JButton bouttonA=new JButton("enregistrer");
+		Projet dossierEncours=null;
+		String temp0="";
+		String y=x.ligneCmd;// command line saved in variable y
+		String [] temp=y.split(" ");//array 'temp' of the command line each containing the elements separated by a " "
+		if(temp.length>1)
+		temp0= temp[1]; //only commands other than "ls" are stored in temp0 because for "ls" temp[1] would be outside the limits of the array
+		
+		int yInt=0;
+			System.out.println("y: "+y);
+				
+				JTextPane fichier=new JTextPane();
+			
+			
+			JPanel monPanel=new JPanel();
+			JFrame monCadre=new JFrame("EDITION DU FICHIER: "+temp0);
+			monCadre.setSize(900, 900);
+			
+			
+			monCadre.setLocationRelativeTo(null);
+			monPanel.add(fichier);
+			monPanel.add(bouttonA);
+			
+			monCadre.setContentPane(monPanel);
+			
+			
+			
+			
+		if (y.equals("ls"))
+			yInt=1;
+		if (y.equals("cd.."))
+				
+			yInt=2;			
+		if (y.equals("cd "+temp0))
+			yInt=3;
+		if (y.equals("mkdir "+temp0)){
+			yInt=4;
+		}
+		if (y.equals("mkfile "+temp0)){
+			yInt=5;
+		}
+		if (y.equals("less "+temp0)){
+			
+			yInt=6;
+			
+		}
+		if (y.equals("pwd")){
+			yInt=7;
+		}
+		if (y.equals("rm "+temp0)){
+			yInt=8;
+		}
+		System.out.print(pwd(x)+">");
+		
+		
+		if (controle==1){
+		
+			switch(yInt){
+			case 1:
+			controle=0;
+			x.ligneCmd=pwd(x)+">";
+			fichier.setText(x.contenu);
+			break;
+	
+			case 2:
+			if(!x.nom.equals("racine")){
+				x=x.pere;
+				controle=0;
+				x.ligneCmd=pwd(x)+">";
+			}
+			else{
+				x.ligneCmd="racine>";
+			}
+			break;
+			
+			case 3:
+			System.out.println("fils");
+			if(x.fils1!=null && y.equals("cd "+x.fils1.nom)&&(x.fils1.type==false)){
+		
+				x=x.fils1;
+				controle=0;
+				x.ligneCmd=pwd(x)+">";
+		
+			}
+			else{
+				if(x.fils2!=null && y.equals("cd "+x.fils2.nom)&&(x.fils2.type==false)){	
+					x=x.fils2;
+					controle=0;
+					x.ligneCmd=pwd(x)+">";
+			
+				}
+				else{
+					if(x.fils3!=null && y.equals("cd "+x.fils3.nom)&&(x.fils3.type==false)){
+						x=x.fils3;
+						controle=0;
+						x.ligneCmd=pwd(x)+">";
+				
+					}
+					else{
+						controle=0;
+						x.ligneCmd="nom inconnu: ["+y+"] "+x.nom+">";
+					
+					}
+				}
+			}
+			break;
+			
+			case 4:
+			dossierEncours=ajoutFils((x),(nouveauDossier(temp0)));
+			if(!(dossierEncours.ligneCmd.equals(tropPlein))){
+				x=dossierEncours;
+				controle=0;
+				x.ligneCmd=pwd(x)+">";
+			}
+			else{
+				controle=0;
+				x.ligneCmd=tropPlein+" "+pwd(x)+">";
+			}
+			break;
+			
+			case 5:
+			fichierEncours1=ajoutFils((x),(nouveauFichier(temp0)));
+			System.out.println("mkfile :"+fichierEncours1.nom+ "; type false pour fichier= "+fichierEncours1.type);
+			if(!(fichierEncours1.ligneCmd.equals(tropPlein))){
+				controle=0;
+				x.ligneCmd=pwd(x)+">";
+				monCadre.setVisible(true);
+			}
+			else{
+				controle=0;
+				x.ligneCmd=tropPlein+" "+pwd(x)+">";
+			}
+			break;
+			
+			case 6:
+			fichierEncours1=x;
+			if(x.fils1!=null && y.equals("less "+x.fils1.nom)&&(x.fils1.type==true)){
+				System.out.println("***Projet, less fils1 reconnu + temp[0]= "+temp[0]);
+				fichier.setText(fichierEncours1.fils1.contenu);
+				controle=0;
+				x=fichierEncours1;
+				x.fils1.ligneCmd=temp[0];
+				System.out.println ("Projet retour suite x.ligneCmd: "+ x.ligneCmd);
+				monCadre.setVisible(true);
+			}
+			else{
+				if(x.fils2!=null && y.equals("less "+x.fils2.nom)&&(x.fils2.type==true)){	
+					System.out.println("***Projet, less fils2 reconnu + temp[0]= "+temp[0]);
+					fichier.setText(fichierEncours1.fils2.contenu);
+					controle=0;
+					monCadre.setVisible(true);
+					x=fichierEncours1;
+					x.fils2.ligneCmd=temp[0];
+					}
+				else{
+					if(x.fils3!=null && y.equals("less "+x.fils3.nom)&&(x.fils3.type==true)){
+						System.out.println("***Projet, less fils3 reconnu + temp[0]= "+temp[0]);
+						fichier.setText(fichierEncours1.fils3.contenu);
+						controle=0;
+						monCadre.setVisible(true);
+						x=fichierEncours1;
+						x.fils3.ligneCmd=temp[0];
+					}
+					else{
+						controle=0;
+						x.ligneCmd="charactere inconnu: ["+y+"] "+x.nom+">";
+					}
+				}
+			}
+			break;
+			
+			case 7:
+			x.ligneCmd=pwd(x)+">";
+			break;
+			
+			case 8:
+			if(x.fils1!=null && y.equals("rm "+x.fils1.nom)){
+				supprimerNoeud(x.fils1);
+				x.ligneCmd=pwd(x)+">";
+			}
+			else{
+				if(x.fils2!=null && y.equals("rm "+x.fils2.nom)){	
+					supprimerNoeud(x.fils2);
+					x.ligneCmd=pwd(x)+">";
+				}
+				else{
+					if(x.fils3!=null && y.equals("rm "+x.fils3.nom)){
+						supprimerNoeud(x.fils3);
+						x.ligneCmd=pwd(x)+">";
+					}
+					else{
+						controle=0;
+						x.ligneCmd="charactere inconnu: ["+y+"] "+x.nom+">";	 	
+					}
+				}
+			}
+			break;
+			}
+		}
+		
+		
+		//*********button for saving the content of a file when created
+		
+		bouttonA.addActionListener(new ActionListener() {   
+			public void actionPerformed(ActionEvent e) { 
+			if(fichierEncours1.fils1!=null && y.equals("less "+fichierEncours1.fils1.nom)&&(fichierEncours1.fils1.type==true)){
+				fichierEncours1.fils1.contenu=fichier.getText();
+				tailleFichier(fichierEncours1.fils1);
+				
+				
+				
+			}
+			else{
+				if(fichierEncours1.fils2!=null && y.equals("less "+fichierEncours1.fils2.nom)&&(fichierEncours1.fils2.type==true)){
+					fichierEncours1.fils2.contenu=fichier.getText();
+					tailleFichier(fichierEncours1.fils2);
+				}
+				else{
+					if(fichierEncours1.fils3!=null && y.equals("less "+fichierEncours1.fils3.nom)&&(fichierEncours1.fils3.type==true)){
+						fichierEncours1.fils3.contenu=fichier.getText();
+						tailleFichier(fichierEncours1.fils3);
+					}
+					else{
+						fichierEncours1.contenu=fichier.getText();
+						tailleFichier(fichierEncours1);
+					}
+				}
+					
+				
+			}
+				
+				tailleDossierEnCascade(fichierEncours1);
+				fichierEncours1.ligneCmd="ls";
+				commande(fichierEncours1);
+				monCadre.dispose();
+			}
+		});
+		
+		controle=0;
+		
+
+		if(x.pere!=null){tailleDossierEnCascade(x.pere);}
+		
+		System.out.println("x.contenu="+x.contenu+"// x.nom= "+x.nom+"//taille fichier"+x.taille);
+		return x;//y;	
+	}
+								
+								/**********************************/
+								
+//tailleFichier(): allows to update the size of a file after its creation and the writing of its contents
+
+	public  int tailleFichier( Projet x){//sous méthode de commande() et de lectureFichier() 
+			String y=x.contenu;
+			x.taille=(y.length())*2;
+		return x.taille;
+	}
+								
+								
+/*tailleDossier() allows you to update the size of all the children of the current folder during its creation
+and its content writing*/
+	
+	public  int tailleDossier(Projet x){ 
+		if(x.fils1!=null && x.fils2!=null && x.fils3!=null)
+			x.taille=x.fils1.taille+x.fils2.taille+x.fils3.taille;
+		else{
+			if(x.fils1!=null && x.fils2!=null)
+				x.taille=x.fils1.taille+x.fils2.taille;
+			else{
+				if(x.fils1!=null)
+				x.taille=x.fils1.taille;		
+			}
+		}
+		return x.taille;
+	}
+	
+	
+
+	//tailleDossierEnCascade(): allows to update the size of the current folder after having updated the size of all its children 
+
+	public  int tailleDossierEnCascade(Projet x){ 
+		tailleDossier(x);
+		
+		if(x.pere!=null){
+			
+			tailleDossierEnCascade(x.pere);
+		}
+		return x.taille;
+	}
+							
+							/**********************IMPORT tree structure from an external txt file **********************/
+
+//lectureFichier(): allows to transcribe in linux command the information contained in standard files like sf1.txt and sf2.txt
+	
+	public  Projet lectureFichier(String a){
+		Projet p=null;
+		Projet fichierEncours=null;
+		try {
+			BufferedReader lecteur = new BufferedReader(new FileReader(a));
+			String ligne=lecteur.readLine();	 
+			do{		
+				int x=0;
+				String [] temp0=ligne.split("%");
+				String [] temp=temp0[0].split(" ");
+				
+				String [][] instruction=new String [13][3];
+				
+				/*********************instruction list*******************************/
+				instruction [0][0]="racine";
+				instruction [1][0]="*";
+				instruction [2][0]="*";
+				instruction [3][0]="**";
+				instruction [4][0]="**";
+				instruction [5][0]="***";
+				instruction [6][0]="***";
+				instruction [7][0]="****";
+				instruction [8][0]="****";
+				instruction [9][0]="mon";//description
+				instruction [10][0]="ceci";//file content
+				instruction [11][0]="null";//folder closing
+				instruction [12][0]="fin";//end of instruction
+
+
+				instruction [0][1]="null";
+				instruction [1][1]="f";
+				instruction [2][1]="d";
+				instruction [3][1]="f";
+				instruction [4][1]="d";
+				instruction [5][1]="f";
+				instruction [6][1]="d";
+				instruction [7][1]="f";
+				instruction [8][1]="d";
+				instruction [9][1]="null";//description:mon
+				instruction [10][1]="contenu fichier";
+				instruction [11][1]="fin";//folder closing
+				instruction [12][1]="null";//end of instruction
+
+
+
+				instruction [0][2]="0";
+				instruction [1][2]="1";
+				instruction [2][2]="11";
+				instruction [3][2]="2";
+				instruction [4][2]="21";
+				instruction [5][2]="3";
+				instruction [6][2]="31";
+				instruction [7][2]="4";
+				instruction [8][2]="41";
+				instruction [9][2]="5";//description:mon
+				instruction [10][2]="6";//file content
+				instruction [11][2]="7";//folder closing
+				instruction [12][2]="8";//end of instruction
+				
+				
+				for(int i=0; i<instruction.length;i ++){
+					if(temp[0].equals("racine"))
+						x=Integer.parseInt(instruction[0][2]);
+					else{
+						if((temp[0].equals("fichier"))||(temp[0].equals("mon"))||(temp[0].equals("fin"))){
+							x=Integer.parseInt(instruction[9][2]);
+						}		
+						else{
+							if(temp[0].equals("ceci")){
+								x=Integer.parseInt(instruction[10][2]);
+							}
+							else{
+								if(temp.length>2){
+									if(temp[0].equals( instruction[i][0])&&temp[2].equals( instruction[i][1])){	
+										x=Integer.parseInt(instruction[i][2]);
+									}
+									else{
+									}
+								}
+								else{
+									if(temp[1].equals("fin")){
+									x=Integer.parseInt(instruction[11][2]);
+									}
+								}
+							}
+						}
+					}
+				}
+				Projet y=null;
+				Projet z=null;
+					switch (x){
+						case 0:
+						System.out.println("racine enregistree");
+						p=nouveauDossier(temp[0]);
+						System.out.println(p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						break;
+						case 1:
+						fichierEncours=ajoutFils((p),(nouveauFichier(temp[1])));
+						System.out.println("fichier ok_"+p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						break;
+						case 11:
+						y =ajoutFils((p),(nouveauDossier(temp[1])));
+						p=y;
+						System.out.println("dossier ok_"+p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						break;
+						case 2:
+						fichierEncours=ajoutFils((p),(nouveauFichier(temp[1])));
+						System.out.println("fichier ok_"+p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						break;
+						case 21:
+						y=ajoutFils((p),(nouveauDossier(temp[1])));
+						p=y;
+						System.out.println("dossier ok_"+p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						break;
+						case 3:
+						fichierEncours=ajoutFils((p),(nouveauFichier(temp[1])));
+						System.out.println("fichier ok_"+p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						break;
+						case 31:
+						y=ajoutFils((p),(nouveauDossier(temp[1])));
+						p=y;
+						System.out.println("dossier ok_"+p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						break;
+						case 4:
+						fichierEncours=ajoutFils((p),(nouveauFichier(temp[1])));
+						System.out.println("fichier ok_"+p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						break;
+						case 41:
+						y=ajoutFils((p),(nouveauDossier(temp[1])));
+						p=y;
+						System.out.println("dossier ok_"+p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						break;
+						case 5:
+						
+						break;
+						case 6:
+						fichierEncours.contenu=ligne;
+						System.out.println("&&& &&& contenu: "+fichierEncours.contenu);
+						tailleFichier(fichierEncours);
+						tailleDossierEnCascade(p);
+						break;
+						case 7:
+						System.out.println("fermeture dossier:"+p.nom);
+						p=p.pere;
+						System.out.println(p.nom+"/"+informationCascade(p)+" "+pwd(p)+">");
+						
+						break;
+						default:
+						System.out.println("erreur de lecture fichier");
+					}
+				ligne=lecteur.readLine();
+			}
+			while(ligne.equals("fin")==false);
+			System.out.println("integration fichier ok!"+information(p));
+		}
+		
+		catch(Exception e) {
+		System.out.println("fichier inexistant dans Projet commande()");
+    }
+	
+		return p;
+	}
+	
+}
